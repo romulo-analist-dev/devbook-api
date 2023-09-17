@@ -3,7 +3,6 @@ package repositorios
 import (
 	"api/src/modelos"
 	"database/sql"
-	"fmt"
 )
 
 type records struct {
@@ -19,20 +18,17 @@ func (repositorio records) Criar(record modelos.Record) (uint64, error) {
 		"insert into records (value, device_id) values(?, ?)",
 	)
 	if erro != nil {
-		fmt.Println("erro ao preparar a query")
 		return 0, nil
 	}
 	defer statement.Close()
 
 	resultado, erro := statement.Exec(record.Value, record.Device.ID)
 	if erro != nil {
-		fmt.Println("erro ao executar a query: " + erro.Error())
 		return 0, nil
 	}
 
 	ultimoIDInserido, erro := resultado.LastInsertId()
 	if erro != nil {
-		fmt.Println("erro ao obter LastInsertId")
 		return 0, nil
 	}
 
@@ -45,7 +41,6 @@ func (repositorio records) Buscar() ([]modelos.Record, error) {
 	)
 
 	if erro != nil {
-		fmt.Println("erro ao preparar a query")
 		return nil, erro
 	}
 
@@ -67,7 +62,6 @@ func (repositorio records) Buscar() ([]modelos.Record, error) {
 			&record.Value,
 			&record.CreatedAt,
 		); erro != nil {
-			fmt.Println("erro ao executar a query: " + erro.Error())
 			return nil, erro
 		}
 		record.Device = &device
@@ -78,8 +72,8 @@ func (repositorio records) Buscar() ([]modelos.Record, error) {
 }
 
 func (repositorio records) BuscarPorID(ID uint64) (modelos.Record, error) {
-	linhas, erro := repositorio.db.Query(
-		"select id, value, createdAt, D.* from records inner join devices D on device_id = D.id where id = ?",
+	linha, erro := repositorio.db.Query(
+		"SELECT D.*, R.id, R.value, R.createdAt FROM devices D INNER JOIN records R ON D.id = R.device_id WHERE R.device_id = ? ORDER BY R.id DESC LIMIT 1;",
 		ID,
 	)
 
@@ -87,19 +81,24 @@ func (repositorio records) BuscarPorID(ID uint64) (modelos.Record, error) {
 		return modelos.Record{}, erro
 	}
 
-	defer linhas.Close()
+	defer linha.Close()
 
 	var record modelos.Record
 
-	if linhas.Next() {
-		if erro = linhas.Scan(
+	if linha.Next() {
+		var device modelos.Device
+
+		if erro = linha.Scan(&device.ID,
+			&device.Name,
+			&device.Address,
+			&device.Latitude,
+			&device.Longitude,
 			&record.ID,
 			&record.Value,
-			&record.CreatedAt,
-			&record.Device,
-		); erro != nil {
+			&record.CreatedAt); erro != nil {
 			return modelos.Record{}, erro
 		}
+		record.Device = &device
 	}
 
 	return record, nil

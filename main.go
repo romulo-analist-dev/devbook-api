@@ -25,7 +25,6 @@ func main() {
 	client := emitter.NewClient(opts)
 	wait(client.Connect())
 	wait(client.Subscribe(channelKey, "demo/"))
-	//wait(client.Publish(channelKey, "demo/", "hello, carai!"))
 
 	fmt.Printf("Escutando na porta %d", config.Porta)
 
@@ -44,7 +43,6 @@ func main() {
 }
 
 func onMessage(client emitter.Emitter, msg emitter.Message) {
-	fmt.Printf("topic: %v, message: %s\n", msg.Topic(), msg.Payload())
 	controller.CreateRecord(string(msg.Payload()))
 }
 

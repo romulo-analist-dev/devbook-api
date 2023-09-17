@@ -12,4 +12,10 @@ var rotasRecords = []Rota{
 		Funcao:             controllers.BuscarRecords,
 		RequerAutenticacao: false,
 	},
+	{
+		URI:                "/records/{deviceId}",
+		Metodo:             http.MethodGet,
+		Funcao:             controllers.BuscarRecord,
+		RequerAutenticacao: false,
+	},
 }

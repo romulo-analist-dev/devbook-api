@@ -11,7 +11,36 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
+
+func BuscarRecord(w http.ResponseWriter, r *http.Request) {
+	parametros := mux.Vars(r)
+	deviceID, erro := strconv.ParseUint(parametros["deviceId"], 10, 64)
+	fmt.Println(deviceID)
+	if erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	db, erro := banco.Conectar()
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repositorios.NewRecordsRepository(db)
+	record, erro := repositorio.BuscarPorID(deviceID)
+
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	respostas.JSON(w, http.StatusOK, record)
+}
 
 func BuscarRecords(w http.ResponseWriter, r *http.Request) {
 	db, erro := banco.Conectar()
@@ -24,7 +53,7 @@ func BuscarRecords(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	repositorio := repositorios.NewRecordsRepository(db)
-	fmt.Println("É aqui?")
+
 	records, erro := repositorio.Buscar()
 	if erro != nil {
 		respostas.Erro(w, http.StatusInternalServerError, erro)
