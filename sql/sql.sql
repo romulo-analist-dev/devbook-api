@@ -53,3 +53,8 @@ CREATE TABLE records(
     CONSTRAINT FK_device_id FOREIGN KEY (device_id)
     REFERENCES devices(id)
 ) ENGINE=INNODB;
+
+USE devbook;
+
+ALTER TABLE devices
+ADD COLUMN  totalValue DOUBLE NOT NULL DEFAULT 0.0;

@@ -7,6 +7,12 @@ import (
 
 var rotasDevices = []Rota{
 	{
+		URI:                "/devices/{deviceId}/totalKwh",
+		Metodo:             http.MethodPut,
+		Funcao:             controllers.AtualizarDeviceTotalKwh,
+		RequerAutenticacao: false,
+	},
+	{
 		URI:                "/devices",
 		Metodo:             http.MethodPost,
 		Funcao:             controllers.CriarDevice,

@@ -6,11 +6,13 @@ import (
 	"api/src/repositorios"
 	"api/src/respostas"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
+	emitter "github.com/emitter-io/go"
 	"github.com/gorilla/mux"
 )
 
@@ -105,6 +107,7 @@ func AtualizarDevice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var device modelos.Device
+	fmt.Println(corpoRequisicao)
 	if erro = json.Unmarshal(corpoRequisicao, &device); erro != nil {
 		respostas.Erro(w, http.StatusBadRequest, erro)
 		return
@@ -124,6 +127,51 @@ func AtualizarDevice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respostas.JSON(w, http.StatusNoContent, nil)
+}
+
+func AtualizarDeviceTotalKwh(w http.ResponseWriter, r *http.Request) {
+	parametros := mux.Vars(r)
+	_, erro := strconv.ParseUint(parametros["deviceId"], 10, 64)
+	if erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	corpoRequisicao, erro := io.ReadAll(r.Body)
+	if erro != nil {
+		respostas.Erro(w, http.StatusUnprocessableEntity, erro)
+		return
+	}
+
+	var data TotalKwh
+	if erro = json.Unmarshal(corpoRequisicao, &data); erro != nil {
+		fmt.Println("bad request: ", erro)
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+	fmt.Println("data: ")
+	opts := emitter.NewClientOptions()
+	opts.AddBroker("tcp://broker.hivemq.com:1883")
+
+	topico := "alguma-coisa/demo/config"
+	message := "1," + fmt.Sprintf("%f", data.TotalValue)
+
+	client := emitter.NewClient(opts)
+	wait(client.Connect())
+	client.Publish(topico, message, 0)
+
+	respostas.JSON(w, http.StatusNoContent, nil)
+}
+
+type TotalKwh struct {
+	TotalValue float64 `json:"totalValue"`
+}
+
+func wait(t emitter.Token) {
+	t.Wait()
+	if t.Error() != nil {
+		panic(t.Error())
+	}
 }
 
 func DeletarDevice(w http.ResponseWriter, r *http.Request) {
