@@ -3,6 +3,7 @@ package repositorios
 import (
 	"api/src/modelos"
 	"database/sql"
+	"fmt"
 )
 
 type records struct {
@@ -14,21 +15,35 @@ func NewRecordsRepository(db *sql.DB) *records {
 }
 
 func (repositorio records) Criar(record modelos.Record) (uint64, error) {
-	statement, erro := repositorio.db.Prepare(
-		"insert into records (value, device_id) values(?, ?)",
+	statementRecord, erro := repositorio.db.Prepare(
+		"insert into records (value, device_id) values(?, ?);",
 	)
 	if erro != nil {
-		return 0, nil
-	}
-	defer statement.Close()
-
-	resultado, erro := statement.Exec(record.Value, record.Device.ID)
-	if erro != nil {
+		fmt.Println("erro aqui 0")
 		return 0, nil
 	}
 
-	ultimoIDInserido, erro := resultado.LastInsertId()
+	statementDevice, erro := repositorio.db.Prepare(
+		"update devices set totalValue = ? where id = ?",
+	)
+
 	if erro != nil {
+		fmt.Println("erro aqui 1")
+		return 0, nil
+	}
+	defer statementRecord.Close()
+	defer statementDevice.Close()
+
+	resultadoRecord, erro := statementRecord.Exec(record.Value, record.Device.ID)
+	if erro != nil {
+		fmt.Println("erro aqui 2")
+		return 0, nil
+	}
+	statementDevice.Exec(record.Device.TotalValue, record.Device.ID)
+
+	ultimoIDInserido, erro := resultadoRecord.LastInsertId()
+	if erro != nil {
+		fmt.Println("erro aqui 3")
 		return 0, nil
 	}
 
@@ -58,6 +73,7 @@ func (repositorio records) Buscar() ([]modelos.Record, error) {
 			&device.Address,
 			&device.Latitude,
 			&device.Longitude,
+			&device.TotalValue,
 			&record.ID,
 			&record.Value,
 			&record.CreatedAt,
@@ -93,6 +109,7 @@ func (repositorio records) BuscarPorID(ID uint64) (modelos.Record, error) {
 			&device.Address,
 			&device.Latitude,
 			&device.Longitude,
+			&device.TotalValue,
 			&record.ID,
 			&record.Value,
 			&record.CreatedAt); erro != nil {

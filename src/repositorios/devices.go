@@ -16,14 +16,14 @@ func NewDevicesRepository(db *sql.DB) *devices {
 
 func (repositorio devices) Criar(device modelos.Device) (uint64, error) {
 	statement, erro := repositorio.db.Prepare(
-		"insert into devices (name, address, latitude, longitude) values(?, ?, ?, ?)",
+		"insert into devices (name, address, latitude, longitude, totalValue) values(?, ?, ?, ?, ?)",
 	)
 	if erro != nil {
 		return 0, nil
 	}
 	defer statement.Close()
 
-	resultado, erro := statement.Exec(device.Name, device.Address, device.Latitude, device.Longitude)
+	resultado, erro := statement.Exec(device.Name, device.Address, device.Latitude, device.Longitude, device.TotalValue)
 	if erro != nil {
 		return 0, nil
 	}
@@ -40,7 +40,7 @@ func (repositorio devices) Buscar(nameOrAddress string) ([]modelos.Device, error
 	nameOrAddress = fmt.Sprintf("%%%s%%", nameOrAddress) // %nameOrAddress%
 
 	linhas, erro := repositorio.db.Query(
-		"select id, name, address, latitude, longitude from devices where name like ? or address like ?",
+		"select id, name, address, latitude, longitude, totalValue from devices where name like ? or address like ?",
 		nameOrAddress, nameOrAddress,
 	)
 
@@ -61,6 +61,7 @@ func (repositorio devices) Buscar(nameOrAddress string) ([]modelos.Device, error
 			&device.Address,
 			&device.Latitude,
 			&device.Longitude,
+			&device.TotalValue,
 		); erro != nil {
 			return nil, erro
 		}
@@ -73,7 +74,7 @@ func (repositorio devices) Buscar(nameOrAddress string) ([]modelos.Device, error
 
 func (repositorio devices) BuscarPorID(ID uint64) (modelos.Device, error) {
 	linhas, erro := repositorio.db.Query(
-		"select id, name, address, latitude, longitude from devices where id = ?",
+		"select id, name, address, latitude, totalValue from devices where id = ?",
 		ID,
 	)
 
@@ -100,15 +101,32 @@ func (repositorio devices) BuscarPorID(ID uint64) (modelos.Device, error) {
 	return device, nil
 }
 
-func (repositorio devices) Atualizar(ID uint64, device modelos.Device) error {
-	statement, erro := repositorio.db.Prepare("update devices set name = ?, address = ?, latitude = ?, longitude = ? where id = ?")
+func (repositorio devices) AtualizarKwh(ID uint64, device modelos.Device) error {
+	fmt.Println(device.TotalValue)
+
+	statement, erro := repositorio.db.Prepare("update devices set totalValue = ? where id = ?")
 
 	if erro != nil {
 		return erro
 	}
 
 	defer statement.Close()
-	if _, erro = statement.Exec(device.Name, device.Address, device.Latitude, device.Longitude, ID); erro != nil {
+	if _, erro = statement.Exec(device.TotalValue, ID); erro != nil {
+		return erro
+	}
+
+	return nil
+}
+
+func (repositorio devices) Atualizar(ID uint64, device modelos.Device) error {
+	statement, erro := repositorio.db.Prepare("update devices set name = ?, address = ?, latitude = ?, longitude = ?, totalValue where id = ?")
+
+	if erro != nil {
+		return erro
+	}
+
+	defer statement.Close()
+	if _, erro = statement.Exec(device.Name, device.Address, device.Latitude, device.Longitude, device.TotalValue, ID); erro != nil {
 		return erro
 	}
 

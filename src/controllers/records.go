@@ -69,13 +69,15 @@ func CreateRecord(message string) {
 
 	deviceID, erro := strconv.ParseUint(data[0], 10, 64)
 	value, erro := strconv.ParseFloat(data[1], 64)
+	totalValue, erro := strconv.ParseFloat(data[2], 64)
 
 	if erro != nil {
 		return
 	}
 
 	device := &modelos.Device{
-		ID: deviceID,
+		ID:         deviceID,
+		TotalValue: totalValue,
 	}
 
 	record := modelos.Record{
